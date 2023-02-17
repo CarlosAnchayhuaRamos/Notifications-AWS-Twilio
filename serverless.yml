@@ -1,0 +1,79 @@
+service: microservice-notifications
+variablesResolutionMode: null
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  lambdaHashingVersion: 20201221
+  stage: ${opt:stage,'dev'}
+  region: ${opt:region,'us-east-2'}
+  tags:
+    Project: microservice-notifications-service
+    Environment: ${opt:stage,'dev'}
+  deploymentPrefix: microservice-notifications-serverless
+  httpApi:
+    cors: true
+    disableDefaultEndpoint: false
+    metrics: true
+    useProviderTags: true
+  environment:
+    NODE_ENV: dev
+
+plugins:
+  - serverless-plugin-typescript 
+  - serverless-offline
+  - serverless-dotenv-plugin
+
+package:
+  individually: true
+  include:
+    - config/.env.dev
+
+functions:
+  receipt:
+    handler: app/handler.receipt
+    events:
+      - http:
+          path: receipt
+          method: post
+      - sqs:
+          arn:aws:sqs:us-east-2:482041903125:notification-mail
+      - sqs:
+          arn:aws:sqs:us-east-2:482041903125:notification-sms
+      - sqs:
+          arn:aws:sqs:us-east-2:482041903125:notification-whatsapp
+      - sqs:
+          arn:aws:sqs:us-east-2:482041903125:notification-push
+  sendmail:
+    handler: app/handler.sendmail
+    events:
+      - http:
+          path: sendmail
+          method: post
+  sendwhatsapp:
+    handler: app/handler.sendwhatsapp
+    events:
+      - http:
+          path: sendwhatsapp
+          method: post
+  sendsms:
+    handler: app/handler.sendsms
+    events:
+      - http:
+          path: sendsms
+          method: post
+  schedul:
+    handler: app/handler.schedul
+    events:
+      - http:
+          path: schedul
+          method: post
+      - schedule: cron(*/5 * 16-17 2 ? *)
+  
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+    lambdaPort: 3002
+  dotenv:
+    path: config/.env.${self:provider.stage}
