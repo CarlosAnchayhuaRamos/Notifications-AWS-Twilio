@@ -32,7 +32,7 @@ export class ReceiptNotification {
   @MaxLength(55, {
     message: "Type is too long",
   })
-  @IsIn(["SINGLE", "PROGRAMMED"], { message: "404 - Type is incorrect" })
+  @IsIn(["SINGLE", "COMPOUND"], { message: "404 - Type is incorrect" })
   type: string;
 
   @IsIn(["PENDING", "SENT", "SENT_ERROR"], {

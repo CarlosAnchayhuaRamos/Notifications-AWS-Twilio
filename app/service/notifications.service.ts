@@ -1,5 +1,6 @@
 import { Service } from "typedi";
 import { ReceiptNotification } from "../model/dto/receiptNotificationDTO";
+import { To, mapperTo } from "../model/dto/toDTO";
 import { NotificationRepository } from "../repository/notification.repository";
 import {
   CHANNEL_EMAIL,
@@ -34,26 +35,36 @@ export class NotificationsService {
   ) {}
 
   async createNotification(receiptNotification: ReceiptNotification) {
-    await this.fieldValidation(receiptNotification);
-    receiptNotification.data.to = this.removeDuplicates(receiptNotification.data.to);
+    // const toNotification : To =  receiptNotification.data.to
+    // const toList: string[] = receiptNotification.data.to.map((to) => to.to);
+    const toList: string[] = [];
+
+    for (const recipient of receiptNotification.data.to) {
+      toList.push(recipient.to);
+    }
+    await this.fieldValidation(receiptNotification, toList);
+    const toListUnique = this.removeDuplicates(toList);
     const notificationToSend = {
       ...receiptNotification,
       status: "PENDING",
       attempts: 0,
     };
     try {
-      const notificationVo = new this.notificationRepository.model(
-        notificationToSend
-      );
-      const notification = await this.notificationRepository.model.create(
-        notificationVo
-      );
-      if (notification.type == "SINGLE") {
-        await this.sendSQS(notification);
-      }
+      // const notificationVo = new this.notificationRepository.model(
+      //   notificationToSend
+      // );
+      // const notification = await this.notificationRepository.model.create(
+      //   notificationVo
+      // );
+      // if (!notification.send.scheduling) {
+      //   await this.sendSQS(notification);
+      // }
+      console.log("toListUnique");
+      console.log(toListUnique);
+      console.log(notificationToSend);
       return {
         code: 201,
-        response: notification,
+        response: "notification",
       };
     } catch (err) {
       console.error(err);
@@ -86,10 +97,10 @@ export class NotificationsService {
     return uniqueNumbers;
   }
 
-  fieldValidation(receiptNotification: ReceiptNotification) {
+  fieldValidation(receiptNotification: ReceiptNotification, toList: string[]) {
     // VALIDATION WHEN THE SEND IS PROGRAMMED
     if (
-      receiptNotification?.type == "PROGRAMMED" &&
+      receiptNotification?.send?.scheduling &&
       !receiptNotification?.send?.date
     ) {
       throw new Error("You have to enter a date");
@@ -98,7 +109,7 @@ export class NotificationsService {
     // VALIDATION TYPE CHANNEL
     if (
       receiptNotification?.channel == CHANNEL_EMAIL &&
-      (!receiptNotification?.data?.title || !receiptNotification?.data?.from || !this.validateEmailList(receiptNotification?.data?.to) || !this.validateEmail(receiptNotification?.data?.from))
+      (!receiptNotification?.data?.title || !receiptNotification?.data?.from || !this.validateEmailList(toList) || !this.validateEmail(receiptNotification?.data?.from))
     ) {
       throw new Error("Title, To and From is requerid in the correct format");
     }
@@ -106,7 +117,7 @@ export class NotificationsService {
     // VALIDATION TYPE WHATSAPP
     if (
       (receiptNotification?.channel == CHANNEL_WHATSAPP || receiptNotification?.channel == CHANNEL_SMS) &&
-      (!this.validatePhoneNumberList(receiptNotification?.data?.to) || !this.validatePhoneNumber(receiptNotification?.data?.from))
+      (!this.validatePhoneNumberList(toList) || !this.validatePhoneNumber(receiptNotification?.data?.from))
     ) {
       throw new Error("To and From is requerid in the correct format");
     }
@@ -350,6 +361,13 @@ export class SendMailService {
   ) {
     // ## GET ID NOTIFICATION IN EVENT
     const id = notificationId;
+    const label = receiptNotification.data.body.match(/\$[a-zA-Z0-9]+/g);
+    const replacement = ["carlos", "miguel"];
+    // for (const label in labels) {
+    //   for (const label in labels) {
+    //     await this.sendSQS(notification[label]);
+    //   }
+    // }
     // ## CONFIGURATION SENGRID
     const to = receiptNotification.data.to;
     const body = receiptNotification.data.body;
@@ -372,7 +390,7 @@ export class SendMailService {
       //send grid
       setApiKey(process.env.SENDGRID_API_KEY);
       const msg: MailDataRequired = {
-        to: to,
+        to: "to",
         from: from || "service-account@delfosti.com",
         subject: title,
         html: body,

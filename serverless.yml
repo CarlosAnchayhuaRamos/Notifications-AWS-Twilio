@@ -68,7 +68,7 @@ functions:
       - http:
           path: schedul
           method: post
-      - schedule: cron(*/5 * 16-17 2 ? *)
+#      - schedule: cron(*/5 * 16-17 2 ? *)
   
 
 custom:

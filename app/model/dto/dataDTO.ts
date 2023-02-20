@@ -1,4 +1,15 @@
 import { IsString, IsArray, MinLength, MaxLength, IsOptional } from "class-validator";
+import { To, mapperTo } from "./toDTO";
+
+interface RecipientMetadata {
+  name: string;
+  last_name: string;
+}
+
+interface Recipient {
+  to: string;
+  metadata: RecipientMetadata;
+}
 
 export class Data {
   @IsString()
@@ -26,12 +37,7 @@ export class Data {
   @IsOptional()
   from: string;
 
-  @MinLength(5, {
-    each: true,
-    message: "To is too short",
-  })
-  @IsArray()
-  to: string[];
+  to: To[];
 
   @IsString()
   @MinLength(5, {
@@ -47,7 +53,7 @@ export class Data {
     title: string,
     body: string,
     from: string,
-    to: string[],
+    to: To[],
     image: string
   ) {
     this.title = title;
@@ -63,7 +69,7 @@ export const mapperData = (mapper: object): Data => {
     mapper["title"],
     mapper["body"],
     mapper["from"],
-    mapper["to"],
+    mapper["to"] ? mapperTo(mapper["to"]) : mapper["to"],
     mapper["image"]
   );
 };
