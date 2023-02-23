@@ -37,7 +37,7 @@ export class Data {
   @IsOptional()
   from: string;
 
-  to: To[];
+  to: any[];
 
   @IsString()
   @MinLength(5, {
@@ -53,7 +53,7 @@ export class Data {
     title: string,
     body: string,
     from: string,
-    to: To[],
+    to: any[],
     image: string
   ) {
     this.title = title;
@@ -69,7 +69,7 @@ export const mapperData = (mapper: object): Data => {
     mapper["title"],
     mapper["body"],
     mapper["from"],
-    mapper["to"] ? mapperTo(mapper["to"]) : mapper["to"],
+    mapper["to"] ? mapper["to"].map((model) => mapperTo(model)) : [],
     mapper["image"]
   );
 };

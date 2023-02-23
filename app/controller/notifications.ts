@@ -37,12 +37,9 @@ export class NotificationsController {
         const errors = parseValidationErrors(dtoValidationData);
         return MessageUtil.error(404, errors);
       } 
-      if(receiptNotification.type = "COMPOUND"){
-        const response = await this.service.createNotification(receiptNotification);
-      return MessageUtil.success(response);
-      } else {
 
-      }
+      const response = await this.service.createNotification(receiptNotification);
+      return MessageUtil.success(response);
       
 
     } catch (error) {

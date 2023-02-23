@@ -26,7 +26,7 @@ export class SendwhatsappController {
       //const params: Notification = JSON.parse(event['Records'][0].body);
       //const params: Notification = JSON.parse(event.body);
       const notificationId =
-      event["Records"][0]["messageAttributes"]["id"]["stringValue"];
+        event["Records"][0]["messageAttributes"]["id"]["stringValue"];
       const response = await this.service.sendWhatsapp(receiptNotification, notificationId);
       return MessageUtil.success(response);
     } catch (error) {

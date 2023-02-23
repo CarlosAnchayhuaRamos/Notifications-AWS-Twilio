@@ -12,12 +12,10 @@ export interface NotificationDocument extends Document {
     title: String;
     body: String;
     from: String;
-    to: [
-      {
-          to: String;
-          metadata: Map<string, object>;
-      }
-    ];
+    to: {
+      to: string;
+      metadata: Record<string, unknown>;
+    }[];
     image: String;
   };
   attempts: number;
@@ -36,15 +34,17 @@ const notificationSchema = new mongoose.Schema(
       title: { type: String },
       body: { type: String, required: true },
       from: { type: String },
-      to: {
-        type: [
-          {
-            to: { type: String },
-            metadata: { type: Map, of: Object },
-          },
-        ],
-        required: true,
-      },
+      to: [{
+        to: {
+          type: String,
+          required: true,
+        },
+        metadata: {
+          type: Object,
+          required: false,
+          default: {},
+        },
+      }],
       image: { type: String },
     },
     attempts: { type: Number, required: true },

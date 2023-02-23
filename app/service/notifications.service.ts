@@ -1,6 +1,5 @@
 import { Service } from "typedi";
 import { ReceiptNotification } from "../model/dto/receiptNotificationDTO";
-import { To, mapperTo } from "../model/dto/toDTO";
 import { NotificationRepository } from "../repository/notification.repository";
 import {
   CHANNEL_EMAIL,
@@ -25,7 +24,6 @@ import {
 } from "../utils/constants";
 import { notificationModel } from "../model/notification/notification.model";
 import { NotificationDocument } from "../model/notification/notification.model";
-//import { toBase64URL } from 'base64url';
 
 @Service()
 export class NotificationsService {
@@ -35,36 +33,45 @@ export class NotificationsService {
   ) {}
 
   async createNotification(receiptNotification: ReceiptNotification) {
-    // const toNotification : To =  receiptNotification.data.to
-    // const toList: string[] = receiptNotification.data.to.map((to) => to.to);
-    const toList: string[] = [];
-
-    for (const recipient of receiptNotification.data.to) {
-      toList.push(recipient.to);
-    }
+    const toList: string[] = receiptNotification.data.to.map((to) => to.to);
     await this.fieldValidation(receiptNotification, toList);
-    const toListUnique = this.removeDuplicates(toList);
+    
+    if(receiptNotification.type == "COMPOUND"){
+      await this.sendNotification(receiptNotification);
+    } else {
+      const to = receiptNotification.data.to
+      for (const item in to) {
+        receiptNotification.data.to = [to[item]]
+        await this.sendNotification(receiptNotification);
+      }
+    }
+    return {
+      code: 201,
+      response: "Notification Send",
+    };
+
+    
+  }
+
+  async sendNotification(receiptNotification){
     const notificationToSend = {
       ...receiptNotification,
       status: "PENDING",
       attempts: 0,
     };
     try {
-      // const notificationVo = new this.notificationRepository.model(
-      //   notificationToSend
-      // );
-      // const notification = await this.notificationRepository.model.create(
-      //   notificationVo
-      // );
-      // if (!notification.send.scheduling) {
-      //   await this.sendSQS(notification);
-      // }
-      console.log("toListUnique");
-      console.log(toListUnique);
-      console.log(notificationToSend);
+      const notificationVo = new this.notificationRepository.model(
+        notificationToSend
+      );
+      const notification = await this.notificationRepository.model.create(
+        notificationVo
+      );
+      if (!notification.send.scheduling) {
+        await this.sendSQS(notification);
+      }
       return {
         code: 201,
-        response: "notification",
+        response: "Notification Send",
       };
     } catch (err) {
       console.error(err);
@@ -303,17 +310,18 @@ export class SchedulService {
         return date;
       };
       const now = roundToMinutes(new Date());
+      const nowUtc = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
       const fiveMinutesAgo = new Date(
-        now.getTime() - TIME_SEND_SCHEDULE * 60 * 1000
+        nowUtc.getTime() - TIME_SEND_SCHEDULE * 60 * 1000
       );
       const objSearch = {
         $or: [
           {
-            type: "PROGRAMMED",
-            "send.date": { $gt: new Date(fiveMinutesAgo), $lte: new Date(now) },
+            "send.scheduling": true,
+            "send.date": { $gt: new Date(fiveMinutesAgo), $lte: new Date(nowUtc) },
           },
           { 
-            type: "SINGLE", 
+            "send.scheduling": false,
             status: "PENDING", 
             attempts: { $gte: 1 }
           }
@@ -325,13 +333,9 @@ export class SchedulService {
       for (const item in notification) {
           await this.sendSQS(notification[item]);
       }
-
-      // notification.forEach(async (item) => {
-      //   await this.sendSQS(item);
-      // });
       return {
         code: 201,
-        response: notification,
+        response: nowUtc,
       };
     } catch (err) {
       console.error(err);
@@ -361,16 +365,22 @@ export class SendMailService {
   ) {
     // ## GET ID NOTIFICATION IN EVENT
     const id = notificationId;
-    const label = receiptNotification.data.body.match(/\$[a-zA-Z0-9]+/g);
-    const replacement = ["carlos", "miguel"];
-    // for (const label in labels) {
-    //   for (const label in labels) {
-    //     await this.sendSQS(notification[label]);
-    //   }
-    // }
+    const toList: string[] = receiptNotification.data.to.map((to) => to.to);
+    const toListUnique = this.removeDuplicates(toList);
+    const metadata = [receiptNotification.data.to[0].metadata];
+    const texto: string = receiptNotification.data.body;
+    const newBody: string = texto.replace(/\$(\w+)/g, (match, key) => {
+      const obj = metadata[0];
+      if (obj.hasOwnProperty(key)) {
+        return obj[key];
+      } else {
+        return match;
+      }
+    });
+    
     // ## CONFIGURATION SENGRID
-    const to = receiptNotification.data.to;
-    const body = receiptNotification.data.body;
+    const to = toListUnique;
+    const body = newBody;
     const from = receiptNotification.data.from;
     const title = receiptNotification.data.title;
 
@@ -390,7 +400,7 @@ export class SendMailService {
       //send grid
       setApiKey(process.env.SENDGRID_API_KEY);
       const msg: MailDataRequired = {
-        to: "to",
+        to: to,
         from: from || "service-account@delfosti.com",
         subject: title,
         html: body,
@@ -422,6 +432,13 @@ export class SendMailService {
     }
   }
 
+  removeDuplicates(numbers: string[]): string[] {
+    const uniqueNumbers = numbers.filter((number, index) => {
+      return index === numbers.indexOf(number);
+    });
+    return uniqueNumbers;
+  }
+
   async findOneBy(objSearch?: any): Promise<NotificationDocument> {
     try {
       const result = await this.notificationRepository.model.findOne(objSearch);
@@ -430,6 +447,22 @@ export class SendMailService {
       console.log(err);
       throw new Error(`El objeto a buscar no se encontro: ${objSearch}`);
     }
+  }
+
+  extractMetadataFieldNames(notification: ReceiptNotification): string[] {
+    const metadataFieldNames: string[] = [];
+  
+    for (const recipient of notification.data.to) {
+      const metadata = recipient.metadata;
+  
+      for (const fieldName in metadata) {
+        if (Object.prototype.hasOwnProperty.call(metadata, fieldName) && !metadataFieldNames.includes(fieldName)) {
+          metadataFieldNames.push(fieldName);
+        }
+      }
+    }
+  
+    return metadataFieldNames;
   }
 }
 
@@ -444,9 +477,23 @@ export class SendWhatsappService {
   ) {
     // ## GET ID NOTIFICATION IN EVENT
     const id = notificationId;
+
+    const toList: string[] = receiptNotification.data.to.map((to) => to.to);
+    const toListUnique = this.removeDuplicates(toList);
+    const metadata = [receiptNotification.data.to[0].metadata];
+    const texto: string = receiptNotification.data.body;
+    const newBody: string = texto.replace(/\$(\w+)/g, (match, key) => {
+      const obj = metadata[0];
+      if (obj.hasOwnProperty(key)) {
+        return obj[key];
+      } else {
+        return match;
+      }
+    });
+
     // ## CONFIGURATION TWILIO
-    const to = receiptNotification.data.to;
-    const body = receiptNotification.data.body;
+    const to = toListUnique;
+    const body = newBody;
     const from = receiptNotification.data.from || +14155238886;
     const title = `${receiptNotification.data.title} `;
 
@@ -501,6 +548,13 @@ export class SendWhatsappService {
     }
   }
 
+  removeDuplicates(numbers: string[]): string[] {
+    const uniqueNumbers = numbers.filter((number, index) => {
+      return index === numbers.indexOf(number);
+    });
+    return uniqueNumbers;
+  }
+
   async findOneBy(objSearch?: any): Promise<NotificationDocument> {
     try {
       const result = await this.notificationRepository.model.findOne(objSearch);
@@ -521,9 +575,23 @@ export class SendSmsService {
     notificationId: string) {
     // ## GET ID NOTIFICATION IN EVENT
     const id = notificationId;
+
+    const toList: string[] = receiptNotification.data.to.map((to) => to.to);
+    const toListUnique = this.removeDuplicates(toList);
+    const metadata = [receiptNotification.data.to[0].metadata];
+    const texto: string = receiptNotification.data.body;
+    const newBody: string = texto.replace(/\$(\w+)/g, (match, key) => {
+      const obj = metadata[0];
+      if (obj.hasOwnProperty(key)) {
+        return obj[key];
+      } else {
+        return match;
+      }
+    });
+
     // ## CONFIGURATION TWILIO
-    const to = receiptNotification.data.to;
-    const body = receiptNotification.data.body;
+    const to = toListUnique;
+    const body = newBody;
     const from = receiptNotification.data.from || +14155238886;
     const title = `${receiptNotification.data.title} `;
 
@@ -576,6 +644,13 @@ export class SendSmsService {
       console.error(err);
       throw err;
     }
+  }
+
+  removeDuplicates(numbers: string[]): string[] {
+    const uniqueNumbers = numbers.filter((number, index) => {
+      return index === numbers.indexOf(number);
+    });
+    return uniqueNumbers;
   }
 
   async findOneBy(objSearch?: any): Promise<NotificationDocument> {

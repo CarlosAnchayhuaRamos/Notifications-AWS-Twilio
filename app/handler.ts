@@ -35,7 +35,7 @@ export const receipt: Handler = async (
   context: any
 ) => {
   context.callbackWaitsForEmptyEventLoop = false;
-  //await connectToNotificationDatabase();
+  await connectToNotificationDatabase();
   return notificationsController.receipt(event);
 };
 

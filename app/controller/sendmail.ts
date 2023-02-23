@@ -17,7 +17,7 @@ export class SendmailController {
   constructor(private service: SendMailService) {}
 
   async sendMail(event: APIGatewayEvent): Promise<MessageUtil> {
-    // const params: Notification = JSON.parse(event.body);
+    //const params: Notification = JSON.parse(event.body);
     const params: Notification = JSON.parse(event["Records"][0].body);
     const receiptNotification: ReceiptNotification =
       mapperReceiptNotification(params);
@@ -25,7 +25,7 @@ export class SendmailController {
       //class-validator
       //const params: Notification = JSON.parse(event['Records'][0].body);
       //const params: Notification = JSON.parse(event.body);
-      const notificationId =
+      const notificationId = 
         event["Records"][0]["messageAttributes"]["id"]["stringValue"];
       console.log('NOTIFICACION ID', notificationId)
       console.log('RECEIPT NOTIFICATION', receiptNotification)
