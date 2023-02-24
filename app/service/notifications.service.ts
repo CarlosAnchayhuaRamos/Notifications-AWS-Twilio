@@ -11,6 +11,8 @@ import {
   MAX_BODY_SIZE_WHATSAPP,
   CHANNEL_WHATSAPP,
   CHANNEL_SMS,
+  COMPOUND,
+  SINGLE
 } from "../utils/constants";
 import { SendMessage } from "../queue/send-message";
 import { MailDataRequired, setApiKey, send } from "@sendgrid/mail";
@@ -36,7 +38,7 @@ export class NotificationsService {
     const toList: string[] = receiptNotification.data.to.map((to) => to.to);
     await this.fieldValidation(receiptNotification, toList);
     
-    if(receiptNotification.type == "COMPOUND"){
+    if(receiptNotification.type == COMPOUND){
       await this.sendNotification(receiptNotification);
     } else {
       const to = receiptNotification.data.to
@@ -154,7 +156,7 @@ export class NotificationsService {
 
   async sendSQS(notification) {
     switch (notification.channel) {
-      case "EMAIL": {
+      case CHANNEL_EMAIL: {
         const message = await this.queue.send({
           DelaySeconds: 10,
           MessageBody: JSON.stringify(notification),
@@ -170,7 +172,7 @@ export class NotificationsService {
         console.log("message Id queue", message.MessageId);
         break;
       }
-      case "WHATSAPP": {
+      case CHANNEL_WHATSAPP: {
         const message = await this.queue.send({
           DelaySeconds: 10,
           MessageBody: JSON.stringify(notification),
@@ -186,7 +188,7 @@ export class NotificationsService {
         console.log("message Id queue", message.MessageId);
         break;
       }
-      case "SMS": {
+      case CHANNEL_SMS: {
         const message = await this.queue.send({
           DelaySeconds: 10,
           MessageBody: JSON.stringify(notification),
@@ -202,7 +204,7 @@ export class NotificationsService {
         console.log("message Id queue", message.MessageId);
         break;
       }
-      case "PUSH": {
+      case CHANNEL_PUSH: {
         const message = await this.queue.send({
           DelaySeconds: 10,
           MessageBody: JSON.stringify(notification),
@@ -233,7 +235,7 @@ export class SchedulService {
 
   async sendSQS(notification) {
     switch (notification.channel) {
-      case "EMAIL": {
+      case CHANNEL_EMAIL: {
         const message = await this.queue.send({
           DelaySeconds: 10,
           MessageBody: JSON.stringify(notification),
@@ -249,7 +251,7 @@ export class SchedulService {
         console.log("message Id queue", message.MessageId);
         break;
       }
-      case "WHATSAPP": {
+      case CHANNEL_WHATSAPP: {
         const message = await this.queue.send({
           DelaySeconds: 10,
           MessageBody: JSON.stringify(notification),
@@ -265,7 +267,7 @@ export class SchedulService {
         console.log("message Id queue", message.MessageId);
         break;
       }
-      case "SMS": {
+      case CHANNEL_SMS: {
         const message = await this.queue.send({
           DelaySeconds: 10,
           MessageBody: JSON.stringify(notification),
@@ -281,7 +283,7 @@ export class SchedulService {
         console.log("message Id queue", message.MessageId);
         break;
       }
-      case "PUSH": {
+      case CHANNEL_PUSH: {
         const message = await this.queue.send({
           DelaySeconds: 10,
           MessageBody: JSON.stringify(notification),
@@ -310,15 +312,15 @@ export class SchedulService {
         return date;
       };
       const now = roundToMinutes(new Date());
-      const nowUtc = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
+      //const nowUtc = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
       const fiveMinutesAgo = new Date(
-        nowUtc.getTime() - TIME_SEND_SCHEDULE * 60 * 1000
+        now.getTime() - TIME_SEND_SCHEDULE * 60 * 1000
       );
       const objSearch = {
         $or: [
           {
             "send.scheduling": true,
-            "send.date": { $gt: new Date(fiveMinutesAgo), $lte: new Date(nowUtc) },
+            "send.date": { $gt: new Date(fiveMinutesAgo), $lte: new Date(now) },
           },
           { 
             "send.scheduling": false,
@@ -335,7 +337,7 @@ export class SchedulService {
       }
       return {
         code: 201,
-        response: nowUtc,
+        response: now,
       };
     } catch (err) {
       console.error(err);
@@ -369,18 +371,24 @@ export class SendMailService {
     const toListUnique = this.removeDuplicates(toList);
     const metadata = [receiptNotification.data.to[0].metadata];
     const texto: string = receiptNotification.data.body;
-    const newBody: string = texto.replace(/\$(\w+)/g, (match, key) => {
-      const obj = metadata[0];
-      if (obj.hasOwnProperty(key)) {
-        return obj[key];
-      } else {
-        return match;
-      }
-    });
+    if(receiptNotification?.type == SINGLE){
+      receiptNotification.data.body = texto.replace(/\$(\w+)/g, (match, key) => {
+        const obj = metadata[0];
+        if (obj.hasOwnProperty(key)) {
+          return obj[key];
+        } else {
+          return match;
+        }
+      });
+    }
+    else {
+      receiptNotification.data.body = texto
+    }
+    
     
     // ## CONFIGURATION SENGRID
     const to = toListUnique;
-    const body = newBody;
+    const body = receiptNotification.data.body;
     const from = receiptNotification.data.from;
     const title = receiptNotification.data.title;
 

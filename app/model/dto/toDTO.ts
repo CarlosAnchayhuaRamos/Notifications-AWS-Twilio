@@ -10,11 +10,11 @@ export class To {
   @IsOptional()
   to: string;
 
-  metadata: Record<string, unknown>;
+  metadata: Map<string, Object>;
 
   constructor(
     to: string,
-    metadata: Record<string, unknown>,
+    metadata: Map<string, Object>,
   ) {
     this.to = to;
     this.metadata = metadata;

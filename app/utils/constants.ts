@@ -7,11 +7,23 @@ export const DB_URL = `mongodb+srv://${
 
 export const DB_NOTIFICATION = process.env.DB_NOTIFICATION;
 
+//Metadata valid
+export const METADATA_LIMIT_20 = 449;
+export const METADATA_INVALID = 654;
+export const METADATA_LIMIT_VALUE_200_CHARACTERS_RF = 450;
+export const METADATA_LIMIT_KEY_30_CHARACTERS_RF = 451;
+export const INVALID_SOURCE_ID_INEXISTENT_VALUE = 443;
+
+
 // TYPES CHANNEL
 export const CHANNEL_EMAIL = "EMAIL";
 export const CHANNEL_WHATSAPP = "WHATSAPP";
 export const CHANNEL_SMS = "SMS";
 export const CHANNEL_PUSH = "PUSH";
+
+// TYPES NOTIFICATION
+export const COMPOUND = "COMPOUND";
+export const SINGLE = "SINGLE";
 
 /* AWS REGION */
 export const REGION = 'us-east-2';

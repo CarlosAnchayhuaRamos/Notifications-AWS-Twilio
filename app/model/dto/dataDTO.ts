@@ -1,16 +1,6 @@
 import { IsString, IsArray, MinLength, MaxLength, IsOptional } from "class-validator";
 import { To, mapperTo } from "./toDTO";
 
-interface RecipientMetadata {
-  name: string;
-  last_name: string;
-}
-
-interface Recipient {
-  to: string;
-  metadata: RecipientMetadata;
-}
-
 export class Data {
   @IsString()
   @MinLength(3, {
@@ -37,7 +27,7 @@ export class Data {
   @IsOptional()
   from: string;
 
-  to: any[];
+  to: To[];
 
   @IsString()
   @MinLength(5, {
@@ -53,7 +43,7 @@ export class Data {
     title: string,
     body: string,
     from: string,
-    to: any[],
+    to: To[],
     image: string
   ) {
     this.title = title;
