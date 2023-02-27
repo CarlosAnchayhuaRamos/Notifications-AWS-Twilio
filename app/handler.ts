@@ -34,57 +34,57 @@ dotenv.config({
 export const receipt: Handler = async (
   event: APIGatewayEvent,
   context: any
-  ) => {
+) => {
   context.callbackWaitsForEmptyEventLoop = false;
   // Connect to database
   await connectToNotificationDatabase();
   // Call 'receipt' method of 'NotificationsController' and return the response
   return notificationsController.receipt(event);
-  };
-  
-  // Handler function for 'sendmail' endpoint
-  export const sendmail: Handler = async (
+};
+
+// Handler function for 'sendmail' endpoint
+export const sendmail: Handler = async (
   event: APIGatewayEvent,
   context: any
-  ) => {
-  context.callbackWaitsForEmptyEventLoop = false;
+) => {
+  context.callbackWaitsForEmptyEventLoop = false;  
   // Connect to database
   await connectToNotificationDatabase();
   // Call 'sendMail' method of 'SendmailController' and return the response
   return sendmailController.sendMail(event);
-  };
-  
-  // Handler function for 'sendwhatsapp' endpoint
-  export const sendwhatsapp: Handler = async (
+};
+
+// Handler function for 'sendwhatsapp' endpoint
+export const sendwhatsapp: Handler = async (
   event: APIGatewayEvent,
   context: any
-  ) => {
+) => {
   context.callbackWaitsForEmptyEventLoop = false;
   // Connect to database
   await connectToNotificationDatabase();
   // Call 'sendwhatsapp' method of 'SendwhatsappController' and return the response
   return sendwhatsappController.sendwhatsapp(event);
-  };
-  
-  // Handler function for 'sendsms' endpoint
-  export const sendsms: Handler = async (
+};
+
+// Handler function for 'sendsms' endpoint
+export const sendsms: Handler = async (
   event: APIGatewayEvent,
   context: any
-  ) => {
+) => {
   context.callbackWaitsForEmptyEventLoop = false;
   // Connect to database
   await connectToNotificationDatabase();
   // Call 'sendsms' method of 'SendsmsController' and return the response
   return sendsmsController.sendsms(event);
-  };
-  
-  // Handler function for 'schedul' endpoint
-  export const schedul: Handler = async (
+};
+
+// Handler function for 'schedul' endpoint
+export const schedul: Handler = async (
   context: any
-  ) => {
+) => {
   context.callbackWaitsForEmptyEventLoop = false;
   // Connect to database
   await connectToNotificationDatabase();
   // Call 'schedul' method of 'SchedulController' and return the response
   return schedulController.schedul();
-  };
+};

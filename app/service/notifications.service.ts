@@ -35,47 +35,58 @@ export class NotificationsService {
   ) {}
 
   async createNotification(receiptNotification: ReceiptNotification) {
+    // Extract the list of recipients from the receiptNotification parameter
     const toList: string[] = receiptNotification.data.to.map((to) => to.to);
+  
+    // Call the fieldValidation function and await its completion
     await this.fieldValidation(receiptNotification, toList);
-    
-    if(receiptNotification.type == COMPOUND){
+  
+    // If the type property is COMPOUND, send the notification
+    if (receiptNotification.type == COMPOUND) {
       await this.sendNotification(receiptNotification);
     } else {
-      const to = receiptNotification.data.to
+      // Otherwise, send a separate notification to each recipient
+      const to = receiptNotification.data.to;
       for (const item in to) {
-        receiptNotification.data.to = [to[item]]
+        receiptNotification.data.to = [to[item]];
         await this.sendNotification(receiptNotification);
       }
     }
+  
+    // Return a response object with code 201 and response "Notification Send"
     return {
       code: 201,
       response: "Notification Send",
     };
+  }  
 
-    
-  }
-
-  async sendNotification(receiptNotification){
+  async sendNotification(receiptNotification) {
+    // Create a new object with additional properties
     const notificationToSend = {
       ...receiptNotification,
       status: "PENDING",
       attempts: 0,
     };
+  
     try {
-      const notificationVo = new this.notificationRepository.model(
-        notificationToSend
-      );
-      const notification = await this.notificationRepository.model.create(
-        notificationVo
-      );
+      // Create a new notificationVo object using the notificationRepository model
+      const notificationVo = new this.notificationRepository.model(notificationToSend);
+  
+      // Create a new notification and await its creation
+      const notification = await this.notificationRepository.model.create(notificationVo);
+  
+      // If the notification is not scheduled, send it immediately
       if (!notification.send.scheduling) {
         await this.sendSQS(notification);
       }
+  
+      // Return a response object with code 201 and response "Notification Send"
       return {
         code: 201,
         response: "Notification Send",
       };
     } catch (err) {
+      // If there is an error, log it and throw a new error
       console.error(err);
       throw new Error(err);
     }
@@ -320,7 +331,7 @@ export class SchedulService {
         $or: [
           {
             "send.scheduling": true,
-            "send.date": { $gt: new Date(fiveMinutesAgo), $lte: new Date(now) },
+            "send.date": { $gt: fiveMinutesAgo, $lte: now },
           },
           { 
             "send.scheduling": false,
@@ -337,7 +348,7 @@ export class SchedulService {
       }
       return {
         code: 201,
-        response: now,
+        response: objSearch,
       };
     } catch (err) {
       console.error(err);

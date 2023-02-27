@@ -1,4 +1,3 @@
-//import { APIGatewayEvent } from "aws-lambda";
 import { MessageUtil } from "../utils/message";
 import { Service } from "typedi";
 import { SendWhatsappService } from "../service/notifications.service";
@@ -7,30 +6,34 @@ import {
   ReceiptNotification,
   mapperReceiptNotification,
 } from "../model/dto/receiptNotificationDTO";
-// import { validate } from "class-validator";
 import { Notification } from "../model/notifications";
-// import { mapperSend, Send } from "../model/dto/sendDTO";
-// import { Data, mapperData } from "../model/dto/dataDTO";
 
 @Service()
 export class SendwhatsappController {
   constructor(private service: SendWhatsappService) {}
 
   async sendwhatsapp(event: APIGatewayEvent): Promise<MessageUtil> {
-    // const params: Notification = JSON.parse(event.body);
+    // Parse the Notification object from the message body
     const params: Notification = JSON.parse(event["Records"][0].body);
-    const receiptNotification: ReceiptNotification =
-        mapperReceiptNotification(params);
+
+    // Map the Notification object to ReceiptNotification object
+    const receiptNotification: ReceiptNotification = mapperReceiptNotification(params);
+
     try {
-      //class-validator
-      //const params: Notification = JSON.parse(event['Records'][0].body);
-      //const params: Notification = JSON.parse(event.body);
-      const notificationId =
-        event["Records"][0]["messageAttributes"]["id"]["stringValue"];
+      // Get the notification id from the message attributes
+      const notificationId = event["Records"][0]["messageAttributes"]["id"]["stringValue"];
+
+      // Send the notification via Whatsapp service
       const response = await this.service.sendWhatsapp(receiptNotification, notificationId);
+
+      // Return the success response
       return MessageUtil.success(response);
+
     } catch (error) {
+      // Log the error
       console.error(error);
+
+      // Return the error response
       return MessageUtil.error(error.code, error.message);
     }
   }
