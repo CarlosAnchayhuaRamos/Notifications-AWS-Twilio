@@ -147,11 +147,19 @@ __MAX_ATTEMPTS:__ Máximo numero de intentos del envío de notificación.
 ``` 
 
 ___id:__ Identificador único del objeto generado por MongoDB, en formato de objeto BSON.
+
 __channel:__ Canal de comunicación utilizado para enviar el mensaje, puede ser "EMAIL", "WHATSAPP", "SMS", "PUSH".
+
 __type:__ Tipo de mensaje, en este caso "SINGLE" que significa un mensajes personalisados o "COMPOUND" para enviar un mismo mensaje a todos los remitentes.
+
 __send:__ Objeto que describe si el mensaje fue programado para un envío futuro y la fecha de envío programada. En este caso, si "scheduling" es true, significa que el mensaje fue programado, y "date" es un objeto que representa una fecha y hora en formato de fecha BSON.
+
 __data:__ Contiene el contenido del mensaje. "title" es el título del mensaje, "body" es el cuerpo del mensaje que incluye variables como $name, $last_name y $work que serán remplazados por los valores correspondientes en la lista de destinatarios. "from" es la dirección de correo electrónico del remitente, "to" es una lista de destinatarios, donde cada objeto contiene una dirección de correo electrónico, un ID generado por MongoDB para ese destinatario en particular, y metadatos adicionales sobre ese destinatario como su nombre y apellido y el nombre de su empresa. "image" contiene una referencia a una imagen relacionada para los mensajes de tipo push.
+
 __status:__ Estado del mensaje, "SENT" que significa que el mensaje ha sido enviado, "PENDING" que está pendiente de enviar y "SENT_ERROR" para mensajes que no puedieron ser enviados.
+
 __attempts:__ Número de intentos que se han hecho para enviar el mensaje.
+
 __createdAt:__ Fecha de creación del objeto en formato BSON.
+
 __updatedAt:__ Fecha de actualización del objeto en formato BSON.
